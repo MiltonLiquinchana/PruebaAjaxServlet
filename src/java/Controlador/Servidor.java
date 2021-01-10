@@ -11,28 +11,21 @@ import Modelo.tablaprueba;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.JOptionPane;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 
-/**
- *
- * @author MiltonLQ
- */
+@MultipartConfig
 public class Servidor extends HttpServlet {
 
     /*no tomar en cuenta*/
-//    Conexion conexion;
-//    DAOtablaprueba tabla;
-//    tablaprueba tabl;
+    Conexion conexion;
+    DAOtablaprueba tabla;
+    tablaprueba tabl;
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -73,11 +66,38 @@ public class Servidor extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String id = request.getParameter("id");//capturo el dato enviado desde fetch el request.getParamete("") es equivalente a $_POST[""] de php
-        PrintWriter out = response.getWriter();
-        JSONObject json = new JSONObject();
-        json.put("ID server", id);
-        out.print(json);//imprimo(pero me da nulo)
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = null;
+        try {
+            //leemos el fk
+            int fk = Integer.parseInt(request.getParameter("id"));
+            out = response.getWriter();
+            tabla = new DAOtablaprueba();
+            tabl = new tablaprueba();
+            tabl = tabla.consultar(fk);
+            //llenamos un objeto de tipo json object
+            JSONObject json;
+            if (tabl == null) {
+                json = new JSONObject();
+                json.put("error", "no se a podido realizar la consulta");
+                out.print(json);
+                out.close();
+                json=null;
+            } else {
+                json = new JSONObject();
+                json.put("pk", tabl.getPk_tabla());
+                json.put("codigo", tabl.getCodigo());
+                out.print(json);
+                out.close();
+                json=null;
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        } finally {
+            out.close();
+        }
 
     }
 
